@@ -1,0 +1,5 @@
+python-fasthtml
+matplotlib
+numpy
+scikit-learn
+
