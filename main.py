@@ -19,6 +19,7 @@ app, rt = fast_app()
 
 ######################################################################
 
+
 def generate_random_data(n, func, sigma, xmin, xmax):
     x = np.random.uniform(xmin, xmax, n)
     y = func(x) + np.random.normal(0, sigma, n)
@@ -28,7 +29,7 @@ def generate_random_data(n, func, sigma, xmin, xmax):
 def create_plot(data, regression_type=None):
     x = [point[0] for point in data]
     y = [point[1] for point in data]
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(6, 6))
     plt.scatter(x, y)
     plt.xlabel("X")
     plt.ylabel("Y")
@@ -38,19 +39,18 @@ def create_plot(data, regression_type=None):
         Y = np.array(y)
         if regression_type == "linear":
             model = LinearRegression().fit(X, Y)
-            y_pred = model.predict(X)
+            x, y = X, model.predict(X)
         elif regression_type == "pca":
             pca = PCA(n_components=1)
-            pca.fit(np.c_[X, Y])
-            y_pred = pca.mean_[1] + pca.components_[0, 1] / pca.components_[0, 0] * (
-                X - pca.mean_[0]
-            )
+            d = np.c_[X, Y]
+            fitted = pca.inverse_transform(pca.fit_transform(d))
+            x, y = fitted[:, 0], fitted[:, 1]
         elif regression_type == "quantile":
             model = QuantileRegressor(quantile=0.5, alpha=0).fit(X, Y)
-            y_pred = model.predict(X)
-        plt.plot(X, y_pred, color="red")
+            x, y = X, model.predict(X)
+        plt.plot(x, y, color="red")
         # compute RMSE
-        rmse = np.sqrt(np.mean((Y - y_pred) ** 2))
+        rmse = np.sqrt(np.mean((Y - y) ** 2))
         plt.title(f"Scatter + {regression_type} \n RMSE: {rmse:.2f}")
     else:
         plt.title("Scatter")
@@ -60,7 +60,9 @@ def create_plot(data, regression_type=None):
     plt.close()
     return base64.b64encode(img.getvalue()).decode()
 
+
 ######################################################################
+
 
 @rt("/")
 def get():
@@ -81,13 +83,13 @@ def get():
                     type="number",
                     id="sample-size",
                     name="sample_size",
-                    value="20",
+                    value="50",
                     min="10",
                     max="2000",
                     step="1",
                 ),
                 Label("σ:", For="sigma"),
-                Input(type="text", id="sigma", name="sigma", value="0.1"),
+                Input(type="text", id="sigma", name="sigma", value="0.5"),
                 style="display: flex; justify-content: space-between; gap: 5px;",
             ),
             Div(
@@ -163,6 +165,7 @@ def post(data_input: str, regression_type: str):
         return Img(src=f"data:image/png;base64,{img_base64}")
     except Exception as e:
         return f"Error: {str(e)}"
+
 
 ######################################################################
 serve()
