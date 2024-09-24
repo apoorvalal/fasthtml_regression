@@ -49,7 +49,9 @@ def create_plot(data, regression_type=None):
             model = QuantileRegressor(quantile=0.5, alpha=0).fit(X, Y)
             y_pred = model.predict(X)
         plt.plot(X, y_pred, color="red")
-        plt.title(f"Scatter + {regression_type}")
+        # compute RMSE
+        rmse = np.sqrt(np.mean((Y - y_pred) ** 2))
+        plt.title(f"Scatter + {regression_type} \n RMSE: {rmse:.2f}")
     else:
         plt.title("Scatter")
     img = BytesIO()
