@@ -23,20 +23,21 @@ app, rt = fast_app()
 def generate_random_data(n, func, sigma, xmin, xmax):
     x = np.random.uniform(xmin, xmax, n)
     y = func(x) + np.random.normal(0, sigma, n)
-    return "\n".join([f"{x[i]:.2f},{y[i]:.2f}" for i in range(n)])
+    return "\n".join([f"{x[i]:.2f},{y[i]:.2f}, 0" for i in range(n)])
 
 
 def create_plot(data, regression_type=None):
     x = [point[0] for point in data]
     y = [point[1] for point in data]
+    manual = [point[2] for point in data]
     plt.figure(figsize=(6, 6))
-    plt.scatter(x, y)
+    plt.scatter(x, y, c=manual)
     plt.xlabel("X")
     plt.ylabel("Y")
     plt.grid()
     if regression_type:
-        X = np.array(x).reshape(-1, 1)
-        Y = np.array(y)
+        X, Y = np.array(x).reshape(-1, 1), np.array(y)
+        manual = np.array(manual)
         if regression_type == "linear":
             model = LinearRegression().fit(X, Y)
             x, y = X, model.predict(X)
@@ -51,7 +52,9 @@ def create_plot(data, regression_type=None):
         plt.plot(x, y, color="red")
         # compute RMSE
         rmse = np.sqrt(np.mean((Y - y) ** 2))
-        plt.title(f"Scatter + {regression_type} \n RMSE: {rmse:.2f}")
+        # rmse with manual points removed
+        rmse_manual = np.sqrt(np.mean((Y[manual == 0] - y[manual == 0]) ** 2))
+        plt.title(f"Scatter + {regression_type} \n RMSE: {rmse:.2f}\n RMSE(subset): {rmse_manual:.2f}")
     else:
         plt.title("Scatter")
     img = BytesIO()
